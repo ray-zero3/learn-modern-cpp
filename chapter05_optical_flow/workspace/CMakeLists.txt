@@ -64,7 +64,7 @@ doctest_discover_tests(chapter05_ws_tests
 # 5) アプリ: chapter05_ws_app
 # ------------------------------------------------------------
 add_executable(chapter05_ws_app
-    app/main.cpp
+    src/main.cpp
 )
 target_link_libraries(chapter05_ws_app PRIVATE
     chapter05_ws_camera

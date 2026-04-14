@@ -38,7 +38,7 @@ modern_cpp_enable_warnings(chapter01_ws_greet)
 # ------------------------------------------------------------
 # 2) 実行ファイル: chapter01_ws_app
 # ------------------------------------------------------------
-add_executable(chapter01_ws_app app/main.cpp)
+add_executable(chapter01_ws_app src/main.cpp)
 target_link_libraries(chapter01_ws_app PRIVATE chapter01_ws_greet)
 modern_cpp_enable_warnings(chapter01_ws_app)
 

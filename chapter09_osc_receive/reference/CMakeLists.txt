@@ -84,7 +84,7 @@ include(doctest)
 doctest_discover_tests(chapter09_ref_tests)
 
 # アプリ
-add_executable(chapter09_ref_app app/main.cpp)
+add_executable(chapter09_ref_app src/main.cpp)
 target_link_libraries(chapter09_ref_app PRIVATE
     chapter09_ref_camera
     chapter09_ref_detector

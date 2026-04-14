@@ -38,7 +38,7 @@ modern_cpp_enable_warnings(chapter00_ref_greet)
 # ------------------------------------------------------------
 # 2) 実行ファイル: chapter00_ref_app
 # ------------------------------------------------------------
-add_executable(chapter00_ref_app app/main.cpp)
+add_executable(chapter00_ref_app src/main.cpp)
 target_link_libraries(chapter00_ref_app PRIVATE chapter00_ref_greet)
 modern_cpp_enable_warnings(chapter00_ref_app)
 

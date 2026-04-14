@@ -47,7 +47,7 @@ doctest_discover_tests(chapter06_ws_tests
 )
 
 # アプリ
-add_executable(chapter06_ws_app app/main.cpp)
+add_executable(chapter06_ws_app src/main.cpp)
 target_link_libraries(chapter06_ws_app PRIVATE
     chapter06_ws_camera
     chapter06_ws_detector

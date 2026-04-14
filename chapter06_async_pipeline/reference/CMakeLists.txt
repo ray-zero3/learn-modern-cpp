@@ -61,7 +61,7 @@ include(doctest)
 doctest_discover_tests(chapter06_ref_tests)
 
 # アプリ
-add_executable(chapter06_ref_app app/main.cpp)
+add_executable(chapter06_ref_app src/main.cpp)
 target_link_libraries(chapter06_ref_app PRIVATE
     chapter06_ref_pipeline
 )

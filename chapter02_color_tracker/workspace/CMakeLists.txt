@@ -67,7 +67,7 @@ doctest_discover_tests(chapter02_ws_tests
 # 3) アプリ: chapter02_ws_app
 # ------------------------------------------------------------
 add_executable(chapter02_ws_app
-    app/main.cpp
+    src/main.cpp
 )
 
 target_link_libraries(chapter02_ws_app PRIVATE

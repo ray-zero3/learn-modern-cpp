@@ -62,7 +62,7 @@ doctest_discover_tests(chapter04_ref_tests)
 # 5) アプリ: chapter04_ref_app
 # ------------------------------------------------------------
 add_executable(chapter04_ref_app
-    app/main.cpp
+    src/main.cpp
 )
 target_link_libraries(chapter04_ref_app PRIVATE
     chapter04_ref_camera
