@@ -432,6 +432,7 @@ footer { border-top: 1px solid var(--border); padding: 1.5rem 3rem; text-align: 
 <tr><th>項目</th><th>前提</th></tr>
 <tr><td>メイン言語</td><td>TypeScript（大規模アプリ開発経験あり）</td></tr>
 <tr><td>C++ 経験</td><td>初級（簡単なプログラムのみ）</td></tr>
+<tr><td>プログラミング基礎</td><td>あり（型システム・非同期・所有権の概念は TS 以外の文脈でも理解可能）</td></tr>
 </table>
 <p>この教材は <strong>C++ 固有の概念（所有権・ムーブ・RAII・テンプレート・未定義動作）</strong>を深掘りし、TypeScript との対比で理解を深めることを重視しています。for ループや if 文の構文説明には時間を使いません。</p>
 
@@ -461,6 +462,40 @@ footer { border-top: 1px solid var(--border); padding: 1.5rem 3rem; text-align: 
 <tr><td><span class="tag tag-ch">Ch.8</span></td><td>ポーズ推定 (Optional)</td><td>ONNXRuntime, C API 相互運用, std::span&lt;const float&gt;</td></tr>
 <tr><td><span class="tag tag-ch">Ch.9</span></td><td>OSC受信 + ImGui</td><td>Dear ImGui 統合、observer パターン、リソース解放順序</td></tr>
 </table>
+
+<h3>学習フィロソフィー — なぜこのアプローチか</h3>
+<div class="tldr"><strong>TL;DR</strong>
+<ul>
+<li><strong>動かしながら学ぶ</strong>: 各章は「画面に何かが映る」「データがネットワークに飛ぶ」などの具体的な成果物で終わる</li>
+<li><strong>TypeScript アナロジーで橋渡し</strong>: 抽象的な概念を「TSでいうと○○」で噛み砕いてから深掘りする</li>
+<li><strong>C++ 固有の罠を正面から扱う</strong>: 所有権・未定義動作・リンカなど、TSでは見えない層を意図的に解説する</li>
+</ul>
+</div>
+
+<p>TypeScript 開発者が C++ でつまずく典型的なポイントは、構文ではなく<strong>概念の断絶</strong>にあります。</p>
+<table>
+<tr><th>TypeScript の前提</th><th>C++ で崩れる前提</th></tr>
+<tr><td>変数への代入は「参照のコピー」</td><td>値型（int, struct）への代入は<strong>値のコピー</strong>。別オブジェクトになる</td></tr>
+<tr><td>GC がメモリを管理する</td><td>スタック・ヒープ・所有権を開発者が明示的に選ぶ</td></tr>
+<tr><td>実行時エラーがほとんど例外で捕捉できる</td><td>配列外アクセス・ダングリング参照などは<strong>未定義動作</strong>でサイレントに壊れる</td></tr>
+<tr><td>import は解決済み（全ファイルが見える）</td><td>コンパイルは1ファイルずつ独立。リンカが後で結合する</td></tr>
+<tr><td>型エラーはコンパイル時に確定</td><td>テンプレートエラーは実体化時に発覚。エラーメッセージが長大になりやすい</td></tr>
+<tr><td>関数のコールコストはほぼ均一</td><td>仮想関数コール（vtable 間接参照）と直接呼び出しには実測可能な差がある</td></tr>
+</table>
+
+<h3>この教材の読み方</h3>
+<ol>
+<li><strong>まず「環境構築」を完了させる</strong> — cmake --build build が通るまで先に進まない。ビルドが壊れた状態で学んでも無意味。</li>
+<li><strong>各章は「達成チェックリスト」から読む</strong> — ゴールを先に把握してから本文を読むと効率的。</li>
+<li><strong>コードは必ず手で写す</strong> — reference/ のコードをそのまま使わず、workspace/ に自分で実装してみる。</li>
+<li><strong>深掘りは「引っかかったとき」に開く</strong> — 最初から全部読む必要はない。「なぜそうなのか」が気になったタイミングで開く。</li>
+<li><strong>エラーメッセージを恐れない</strong> — C++ のエラーは長いが、最初の数行が本質。clang++ は GCC より親切なメッセージを出す。</li>
+<li><strong>章をまたいで進めない</strong> — 各章は前章の成果物を前提とする。Chapter 1 が完全に動いてから Chapter 2 へ。</li>
+</ol>
+
+<div class="tip-box"><strong>TypeScript 開発者が C++ を学ぶ最大のメリット</strong>
+TS では「隠蔽されている」メモリモデル・コンパイルパイプライン・リンカの仕組みを理解することで、TS の動作についてもより深く理解できます。たとえば「なぜ import が循環するとバンドラが困るのか」「なぜ型定義ファイル(.d.ts)が必要なのか」が C++ の仕組みを通じて自然に分かるようになります。
+</div>
 </section>
 
 <!-- ═══════════════════════════════════════════
@@ -475,6 +510,7 @@ footer { border-top: 1px solid var(--border); padding: 1.5rem 3rem; text-align: 
 cmake --version
 brew list --versions opencv</code></pre>
 </div>
+<p>clang++ が見つからない場合は <code>brew install llvm</code> を実行してください。opencv は <code>brew install opencv</code> でインストールします。</p>
 
 <h3>初回ビルド</h3>
 <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
@@ -489,24 +525,60 @@ cmake --build build
 ctest --test-dir build --output-on-failure</code></pre>
 </div>
 
+<h3>cmake フラグの詳細説明</h3>
+<p>CMake のフラグは TS の <code>tsconfig.json</code> の各フィールドに相当します。</p>
+<table>
+<tr><th>フラグ</th><th>意味</th><th>TS 相当</th></tr>
+<tr><td><code>-S .</code></td><td>ソースディレクトリ（CMakeLists.txt がある場所）</td><td>プロジェクトルート</td></tr>
+<tr><td><code>-B build</code></td><td>ビルド成果物を置くディレクトリ（自動作成される）</td><td>dist/ や out/</td></tr>
+<tr><td><code>-DCMAKE_CXX_COMPILER=...</code></td><td>使用するコンパイラのパスを指定</td><td>package.json の engines フィールドに相当</td></tr>
+<tr><td><code>-DCMAKE_BUILD_TYPE=Debug</code></td><td>ビルド構成（Debug/Release など）</td><td>NODE_ENV=development</td></tr>
+<tr><td><code>-GNinja</code></td><td>ビルドシステムのジェネレータを Ninja に指定</td><td>npm vs yarn の選択に近い</td></tr>
+<tr><td><code>-DCMAKE_EXPORT_COMPILE_COMMANDS=ON</code></td><td>compile_commands.json を出力（clangd が必要）</td><td>tsconfig の paths 等の IDE 連携情報</td></tr>
+</table>
+
+<h4>Out-of-source build とは</h4>
+<p>CMake では<strong>ソースディレクトリとビルドディレクトリを分ける</strong>のが標準的な作法です。これを "out-of-source build" と呼びます。</p>
+<table>
+<tr><th></th><th>In-source build（非推奨）</th><th>Out-of-source build（推奨）</th></tr>
+<tr><td>ビルド成果物</td><td>ソースと同じ場所に混在する</td><td><code>build/</code> ディレクトリに集約される</td></tr>
+<tr><td>クリーン</td><td>個別に削除が必要</td><td><code>rm -rf build</code> 一発でリセット</td></tr>
+<tr><td>.gitignore</td><td>複数パターンを書く必要がある</td><td><code>build/</code> を1行追加するだけ</td></tr>
+<tr><td>複数構成の共存</td><td>不可（衝突する）</td><td><code>build-debug/</code> <code>build-release/</code> を並列で持てる</td></tr>
+</table>
+
 <div class="tip-box"><strong>Tip: Ninja でビルドを高速化</strong>
-<code>brew install ninja</code> した後、cmake に <code>-GNinja</code> を追加すると並列ビルドが効きやすく数倍速くなります。
+<code>brew install ninja</code> した後、cmake に <code>-GNinja</code> を追加すると並列ビルドが効きやすく数倍速くなります。デフォルトの Makefile ジェネレータより依存解析が賢く、差分ビルドが高速です。
 </div>
 
 <h3>ビルドタイプ</h3>
 <table>
-<tr><th>CMAKE_BUILD_TYPE</th><th>用途</th></tr>
-<tr><td>Debug</td><td>デバッグシンボル有、最適化なし。開発時はこれ</td></tr>
-<tr><td>Release</td><td>最適化有、-DNDEBUG。計測・配布時</td></tr>
-<tr><td>RelWithDebInfo</td><td>最適化有＋シンボル有。プロファイリング向け</td></tr>
+<tr><th>CMAKE_BUILD_TYPE</th><th>コンパイルフラグ</th><th>用途</th></tr>
+<tr><td>Debug</td><td>-O0 -g（最適化なし、デバッグシンボル有）</td><td>開発時はこれ。gdb / lldb でデバッグ可能</td></tr>
+<tr><td>Release</td><td>-O3 -DNDEBUG（最大最適化）</td><td>性能計測・配布時</td></tr>
+<tr><td>RelWithDebInfo</td><td>-O2 -g（最適化有＋シンボル有）</td><td>プロファイリング向け</td></tr>
+<tr><td>MinSizeRel</td><td>-Os -DNDEBUG（バイナリサイズ最小化）</td><td>組み込み・配布バイナリ削減</td></tr>
 </table>
+<p><code>-DNDEBUG</code> は <code>assert()</code> マクロを無効化します。Release ビルドでは assert が動かないことを覚えておきましょう。</p>
 
 <h3>clangd（補完・型チェック）の設定</h3>
 <div class="code-wrap"><span class="code-label">bash</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
 <pre><code class="lang-bash"># compile_commands.json をルートにシンボリックリンク
 ln -sf build/compile_commands.json compile_commands.json</code></pre>
 </div>
-<p>VS Code では <strong>clangd 拡張</strong>（llvm-vs-code-extensions.vscode-clangd）をインストールし、<code>clangd.path</code> に <code>/opt/homebrew/opt/llvm/bin/clangd</code> を指定します。</p>
+
+<h4>compile_commands.json とは</h4>
+<p><code>compile_commands.json</code> は「各ソースファイルをどのコンパイラコマンドでビルドするか」を記録した JSON ファイルです。clangd（言語サーバ）はこれを読み込むことで、実際のビルドと同じ include パス・マクロ定義・言語規格で型チェック・補完を提供します。</p>
+<div class="code-wrap"><span class="code-label">json（compile_commands.json の例）</span>
+<pre><code>[
+  {
+    "directory": "/path/to/modern-cpp/build",
+    "command": "/opt/homebrew/opt/llvm/bin/clang++ -std=c++20 -I../include ... -c ../src/greeting.cpp",
+    "file": "../src/greeting.cpp"
+  }
+]</code></pre>
+</div>
+<p>VS Code では <strong>clangd 拡張</strong>（llvm-vs-code-extensions.vscode-clangd）をインストールし、<code>clangd.path</code> に <code>/opt/homebrew/opt/llvm/bin/clangd</code> を指定します。TypeScript の tsserver に相当する役割を果たします。</p>
 
 <div class="tip-box"><strong>Tip: AddressSanitizer でメモリバグを早期発見</strong>
 <div class="code-wrap" style="margin-top:0.5rem"><button class="copy-btn" onclick="copyCode(this)">コピー</button>
@@ -516,11 +588,11 @@ ln -sf build/compile_commands.json compile_commands.json</code></pre>
   -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined"
 cmake --build build-asan</code></pre>
 </div>
-<code>-fsanitize=address</code> は境界外アクセス・use-after-free を、<code>undefined</code> は未定義動作を実行時に検出します。開発中は常に有効にすることを推奨。
+<code>-fsanitize=address</code> は境界外アクセス・use-after-free を、<code>undefined</code> は未定義動作を実行時に検出します。開発中は常に有効にすることを推奨します。TypeScript に相当するものがないほど強力なデバッグツールです。
 </div>
 
 <div class="tip-box"><strong>Tip: ccache でリビルドを高速化</strong>
-<code>brew install ccache</code> → <code>cmake</code> に <code>-DCMAKE_CXX_COMPILER_LAUNCHER=ccache</code> を追加するだけ。2回目以降のビルドがキャッシュヒットして大幅に速くなります。
+<code>brew install ccache</code> → cmake に <code>-DCMAKE_CXX_COMPILER_LAUNCHER=ccache</code> を追加するだけ。2回目以降のビルドがキャッシュヒットして大幅に速くなります。ファイルを変更していない Translation Unit は再コンパイルをスキップします。
 </div>
 
 <h3>トラブルシューティング</h3>
@@ -534,12 +606,25 @@ cmake --build build-asan</code></pre>
 <summary>macOS でカメラが開かない（Chapter 1 以降）</summary>
 <div class="details-body">
 <p>システム設定 → プライバシーとセキュリティ → カメラ で、使用しているターミナルアプリ（Terminal.app / iTerm2 / VS Code）に許可を与えます。初回起動時にダイアログが出ない場合は手動で設定が必要です。</p>
+<p>確認コマンド: <code>system_profiler SPCameraDataType</code> でカメラデバイスが認識されているか確認できます。</p>
 </div>
 </details>
 <details>
 <summary>ビルドが壊れた感じがする（キャッシュ破損）</summary>
 <div class="details-body">
-<p>CMake のキャッシュが破損したら <code>rm -rf build</code> して最初から configure し直します。TypeScript の <code>rm -rf node_modules && npm install</code> に相当します。</p>
+<p>CMake のキャッシュが破損したら <code>rm -rf build</code> して最初から configure し直します。TypeScript の <code>rm -rf node_modules && npm install</code> に相当します。CMakeCache.txt を手動編集するのは避けてください。</p>
+</div>
+</details>
+<details>
+<summary>OpenCV が見つからない（could not find OpenCV）</summary>
+<div class="details-body">
+<p><code>brew install opencv</code> でインストールし、<code>brew --prefix opencv</code> でパスを確認します。CMake に <code>-DOpenCV_DIR=$(brew --prefix opencv)/lib/cmake/opencv4</code> を追加すると明示的にパスを指定できます。</p>
+</div>
+</details>
+<details>
+<summary>FetchContent でダウンロードが失敗する</summary>
+<div class="details-body">
+<p>ネットワーク環境（プロキシ等）が原因のことが多いです。<code>FETCHCONTENT_UPDATES_DISCONNECTED ON</code> を CMake キャッシュに設定すると、一度ダウンロードした後はネットワーク不要で動作します。また <code>build/_deps/</code> 以下にダウンロードされたソースがキャッシュされます。</p>
 </div>
 </details>
 </section>
@@ -597,13 +682,125 @@ cmake --build build-asan</code></pre>
 <li><strong>chapter00_ref_tests</strong> — doctest をリンクしたテストバイナリ</li>
 </ol>
 
+<h3>CMakeLists.txt を行ごとに読む</h3>
+<div class="code-wrap"><span class="code-label">CMakeLists.txt（アノテーション付き）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cmake"><span class="hl-comment"># --- ライブラリターゲット ---</span>
+<span class="hl-comment"># add_library(名前 ソースファイル...)</span>
+<span class="hl-comment"># STATIC = .a（静的リンク）/ SHARED = .so(.dylib) / OBJECT = .o のみ</span>
+add_library(chapter00_ref_greet STATIC
+    src/greeting.cpp   <span class="hl-comment"># .cpp だけ書く。.hpp は自動でヘッダ検索される</span>
+)
+
+<span class="hl-comment"># include パスを公開 (PUBLIC = 自分 + リンク元に伝播)</span>
+<span class="hl-comment"># TS の tsconfig.json の "paths" に相当</span>
+target_include_directories(chapter00_ref_greet PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+<span class="hl-comment"># C++20 を要求。target_ 系でターゲットごとに設定するのがモダン CMake の作法</span>
+target_compile_features(chapter00_ref_greet PUBLIC cxx_std_20)
+
+<span class="hl-comment"># --- 実行ファイルターゲット ---</span>
+add_executable(chapter00_ref_app app/main.cpp)
+
+<span class="hl-comment"># PRIVATE = 自分だけ使う（greet ライブラリの include パスも一緒に伝播する）</span>
+target_link_libraries(chapter00_ref_app PRIVATE chapter00_ref_greet)
+
+<span class="hl-comment"># --- テストターゲット ---</span>
+add_executable(chapter00_ref_tests tests/test_greeting.cpp)
+target_link_libraries(chapter00_ref_tests PRIVATE chapter00_ref_greet doctest::doctest)
+
+<span class="hl-comment"># CTest に登録する（ctest コマンドで実行できるようになる）</span>
+add_test(NAME chapter00_ref_tests COMMAND chapter00_ref_tests)</code></pre>
+</div>
+
+<h3>cmake -S . -B build が内部で何をするか</h3>
+<p>このコマンドは実際には3段階のうち最初の2段階（Configure + Generate）を実行します。</p>
+<ol>
+<li><strong>Configure（CMakeLists.txt の実行）</strong>: CMakeLists.txt をスクリプトとして上から順に実行し、内部モデル（ターゲット・プロパティ・依存関係のグラフ）を構築します。この段階でシステムの OpenCV・LLVM などの検索も行われます。</li>
+<li><strong>Generate（ビルドファイルの生成）</strong>: 内部モデルを元に <code>build.ninja</code>（または <code>Makefile</code>）を生成します。CMake 自身はコンパイルしません。</li>
+<li><strong>Build（実際のコンパイル・リンク）</strong>: <code>cmake --build build</code> で Ninja や Make がコンパイラを呼び出します。ここで <code>.cpp → .o → .a / 実行ファイル</code> の変換が起きます。</li>
+</ol>
+<div class="code-wrap"><span class="code-label">概念図</span>
+<pre><code>CMakeLists.txt
+    │
+    ▼ cmake -S . -B build  ← Configure + Generate
+build/
+  ├── CMakeCache.txt     ← キャッシュ変数の保存（2回目以降は再利用）
+  ├── build.ninja        ← Ninja が読むビルドルール
+  └── ...
+    │
+    ▼ cmake --build build  ← Build（Ninja が実行）
+build/
+  ├── chapter00_hello/reference/
+  │     ├── libchapter00_ref_greet.a   ← 静的ライブラリ
+  │     ├── chapter00_ref_app          ← 実行ファイル
+  │     └── chapter00_ref_tests        ← テストバイナリ</code></pre>
+</div>
+
+<h3>FetchContent が内部でやること</h3>
+<div class="code-wrap"><span class="code-label">CMake</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cmake">FetchContent_Declare(
+    doctest
+    GIT_REPOSITORY https://github.com/doctest/doctest.git
+    GIT_TAG        v2.4.11
+)
+FetchContent_MakeAvailable(doctest)</code></pre>
+</div>
+<p>上記の2行が行う処理を順番に説明します：</p>
+<ol>
+<li><code>FetchContent_Declare</code>: 「このライブラリをどこから取得するか」を登録するだけ（まだダウンロードはしない）</li>
+<li><code>FetchContent_MakeAvailable</code>: 実際に git clone を実行して <code>build/_deps/doctest-src/</code> に保存し、そのディレクトリをビルドに追加する（<code>add_subdirectory</code> と同等）</li>
+<li>2回目以降のビルドではダウンロード済みのソースを再利用するため、ネットワーク不要</li>
+</ol>
+<p>TypeScript の <code>npm install</code> では <code>node_modules/</code> にパッケージが置かれますが、FetchContent では <code>build/_deps/</code> が同等の役割を果たします。</p>
+
 <h4>PRIVATE / PUBLIC / INTERFACE の使い分け</h4>
 <table>
-<tr><th>指定</th><th>このターゲット自身</th><th>リンク元への伝搬</th></tr>
-<tr><td>PRIVATE</td><td>○</td><td>×</td></tr>
-<tr><td>PUBLIC</td><td>○</td><td>○</td></tr>
-<tr><td>INTERFACE</td><td>×</td><td>○</td></tr>
+<tr><th>指定</th><th>このターゲット自身</th><th>リンク元への伝搬</th><th>典型用途</th></tr>
+<tr><td>PRIVATE</td><td>○</td><td>×</td><td>内部実装詳細（外部に漏らしたくない）</td></tr>
+<tr><td>PUBLIC</td><td>○</td><td>○</td><td>API の一部（呼び出し元も必要）</td></tr>
+<tr><td>INTERFACE</td><td>×</td><td>○</td><td>ヘッダオンリーライブラリ（自分はコンパイルしない）</td></tr>
 </table>
+
+<h3>よくあるミス: inline なしでヘッダに定義を書く（ODR 違反）</h3>
+<div class="code-wrap"><span class="code-label">C++（ODR 違反の例）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// greeting.hpp — NG パターン</span>
+<span class="hl-preproc">#pragma once</span>
+<span class="hl-preproc">#include &lt;string&gt;</span>
+
+<span class="hl-comment">// inline なしで関数の「定義」をヘッダに書くと、このヘッダを</span>
+<span class="hl-comment">// include した全 .cpp に定義が展開されてリンカが「重複定義エラー」を出す</span>
+std::string greet(<span class="hl-keyword">const</span> std::string&amp; name) {  <span class="hl-comment">// ← NG</span>
+    <span class="hl-keyword">return</span> <span class="hl-string">"Hello, "</span> + name + <span class="hl-string">"!"</span>;
+}
+
+<span class="hl-comment">// OK パターン1: inline キーワードで「複数 TU に定義があっても良い」と宣言</span>
+<span class="hl-keyword">inline</span> std::string greet(<span class="hl-keyword">const</span> std::string&amp; name) {  <span class="hl-comment">// ← OK</span>
+    <span class="hl-keyword">return</span> <span class="hl-string">"Hello, "</span> + name + <span class="hl-string">"!"</span>;
+}
+
+<span class="hl-comment">// OK パターン2: ヘッダには宣言のみ、定義は .cpp に書く（推奨）</span>
+std::string greet(<span class="hl-keyword">const</span> std::string&amp; name); <span class="hl-comment">// ← 宣言のみ</span></code></pre>
+</div>
+<p>「ヘッダには宣言のみ、定義は .cpp に書く」が基本ルールです。例外として、<code>inline</code> 関数・<code>constexpr</code> 関数・テンプレートはヘッダに定義を書く必要があります（定義が見えないとインライン化・実体化ができないため）。</p>
+
+<h3>名前空間の使い方</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// greeting.hpp</span>
+<span class="hl-keyword">namespace</span> greet {
+    std::string greet(<span class="hl-keyword">const</span> std::string&amp; name); <span class="hl-comment">// greet::greet()</span>
+    <span class="hl-keyword">enum class</span> TimeOfDay { Morning, Afternoon, Evening, Night };
+}
+
+<span class="hl-comment">// main.cpp — 使い方</span>
+<span class="hl-preproc">#include "greet/greeting.hpp"</span>  <span class="hl-comment">// ← TS の import に相当</span>
+
+<span class="hl-keyword">int</span> main() {
+    std::cout &lt;&lt; greet::greet(<span class="hl-string">"World"</span>) &lt;&lt; <span class="hl-string">"\n"</span>; <span class="hl-comment">// greet:: = TS の import { greet } from "..." に相当</span>
+}</code></pre>
+</div>
+<p>TS の <code>import { greet } from './greeting'</code> は実行時のモジュール解決ですが、C++ の <code>#include</code> はコンパイル時のテキスト展開です。名前空間はファイル境界とは独立して存在し、複数ファイルで同じ名前空間を使えます。</p>
 
 <h3>TDD ワークフロー（Chapter 0 の仕様）</h3>
 <table>
@@ -695,6 +892,25 @@ greeting.hpp ─┘</code></pre>
 <h3>再コンパイルコストの観点</h3>
 <p><code>.hpp</code> を 1 行変えると、それを <code>#include</code> した<strong>全ての .cpp が再コンパイル</strong>されます。<code>.cpp</code> を 1 行変えても、その .cpp だけ再コンパイルすれば OK。大規模プロジェクトでは「ヘッダは最小・実装詳細は .cpp に押し込む」が鉄則です。</p>
 
+<h3>ODR 違反の典型例と診断</h3>
+<div class="code-wrap"><span class="code-label">C++（リンカエラーが出る ODR 違反）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// util.hpp（pragma once なし、かつ inline なし）</span>
+std::string helper() { <span class="hl-keyword">return</span> <span class="hl-string">"hello"</span>; } <span class="hl-comment">// ← 定義をヘッダに書いている</span>
+
+<span class="hl-comment">// a.cpp</span>
+<span class="hl-preproc">#include "util.hpp"</span> <span class="hl-comment">// helper() の定義が a.o に埋め込まれる</span>
+
+<span class="hl-comment">// b.cpp</span>
+<span class="hl-preproc">#include "util.hpp"</span> <span class="hl-comment">// helper() の定義が b.o にも埋め込まれる</span>
+
+<span class="hl-comment">// リンカエラー: duplicate symbol 'helper()' in a.o and b.o</span>
+<span class="hl-comment">// ↑ pragma once でインクルードガードしても同一 TU での二重定義は防げるが、</span>
+<span class="hl-comment">//   別 TU（.cpp）での重複は防げない</span>
+
+<span class="hl-comment">// 修正: inline を付ける（各 TU に定義があっても ODR OK と規格が保証）</span>
+<span class="hl-keyword">inline</span> std::string helper() { <span class="hl-keyword">return</span> <span class="hl-string">"hello"</span>; } <span class="hl-comment">// ← OK</span></code></pre>
+</div>
+
 <div class="tip-box"><strong>Tip: C++20 Modules への展望</strong>
 C++20 では <code>import std;</code> のような <strong>Modules</strong> が導入され、ヘッダのコピペ問題を根本から解決します。ただしコンパイラ・ビルドシステム双方のサポートがまだ発展途上のため、本プロジェクトでは伝統的なヘッダ方式を採用しています。
 </div>
@@ -773,18 +989,107 @@ target_link_libraries(chapter00_ref_app PRIVATE chapter00_ref_greet)</code></pre
 <tr><td>find_package(OpenCV)</td><td>システムにインストール済みのライブラリを CMake で参照</td></tr>
 </table>
 
+<h3>C++ のメモリ管理 vs TypeScript の GC</h3>
+<div class="tldr"><strong>TL;DR</strong>
+<ul>
+<li>TypeScript: GC がいつオブジェクトを解放するか開発者は関与しない</li>
+<li>C++ スタック変数: スコープを出ると<strong>即座に・確定的に</strong>デストラクタが呼ばれる</li>
+<li>C++ ヒープ変数: <code>std::unique_ptr</code> などスマートポインタが「スコープ終了時に <code>delete</code>」を保証</li>
+</ul>
+</div>
+
+<table>
+<tr><th></th><th>TypeScript</th><th>C++</th></tr>
+<tr><td>メモリ管理</td><td>GC（非決定論的なタイミングで解放）</td><td>スタック: 確定的解放 / ヒープ: unique_ptr/shared_ptr</td></tr>
+<tr><td>リソース解放</td><td>ファイナライザは保証されない</td><td>デストラクタはスコープ終了で<strong>必ず</strong>呼ばれる</td></tr>
+<tr><td>「持ち主」の概念</td><td>参照カウントで共有が基本</td><td>所有権（unique_ptr）と共有（shared_ptr）を明示的に選ぶ</td></tr>
+<tr><td>null 安全</td><td>? 演算子、strictNullChecks</td><td>std::optional&lt;T&gt; を使う（ポインタの代替）</td></tr>
+</table>
+
+<h3>std::unique_ptr — ヒープオブジェクトの RAII</h3>
+<p><code>std::unique_ptr&lt;T&gt;</code> は「ヒープに確保したオブジェクトへの唯一の所有者」を表します。unique_ptr がスコープを出るとデストラクタで <code>delete</code> が自動で呼ばれます。</p>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// NG: 手動 new/delete (例外で leakする)</span>
+cv::VideoCapture* cap = <span class="hl-keyword">new</span> cv::VideoCapture();
+cap-&gt;open(<span class="hl-number">0</span>);
+<span class="hl-comment">// 例外が飛ぶと delete cap; に到達しない → リーク</span>
+<span class="hl-keyword">delete</span> cap;
+
+<span class="hl-comment">// OK: unique_ptr で自動管理</span>
+<span class="hl-keyword">auto</span> cap = std::make_unique&lt;cv::VideoCapture&gt;();
+cap-&gt;open(<span class="hl-number">0</span>);
+<span class="hl-comment">// スコープを出ると delete が自動で呼ばれる</span>
+
+<span class="hl-comment">// TS の相当物（概念的に）</span>
+<span class="hl-comment">// const cap = new VideoCapture();  ← GC が管理（解放タイミング不明）</span>
+<span class="hl-comment">// await using cap = new VideoCapture(); ← using 宣言（Explicit Resource Management）</span></code></pre>
+</div>
+
+<h3>Rule of Zero — 何も書かなくていい場合</h3>
+<p>「Rule of Zero」とは「デストラクタ・コピー/ムーブコンストラクタ・代入演算子を<strong>自分で書かなくていい</strong>設計を目指せ」という原則です。</p>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// Rule of Zero: メンバに RAII 型を使えば特殊メンバ関数は不要</span>
+<span class="hl-keyword">class</span> Tracker {
+    std::string name_;              <span class="hl-comment">// string が自身を管理</span>
+    std::vector&lt;<span class="hl-type">float</span>&gt; history_;    <span class="hl-comment">// vector が自身を管理</span>
+    std::unique_ptr&lt;cv::Mat&gt; buf_;  <span class="hl-comment">// unique_ptr が自身を管理</span>
+    <span class="hl-comment">// デストラクタ不要！コピー/ムーブも自動生成で OK</span>
+};
+
+<span class="hl-comment">// Rule of Five が必要なケース: 生のリソース（FILE*, fd, デバイスハンドル）を直接持つとき</span>
+<span class="hl-keyword">class</span> CameraCapture {
+    cv::VideoCapture cap_;  <span class="hl-comment">// 生のデバイスハンドル</span>
+<span class="hl-keyword">public</span>:
+    ~CameraCapture();                              <span class="hl-comment">// 明示的解放が必要</span>
+    CameraCapture(<span class="hl-keyword">const</span> CameraCapture&amp;) = <span class="hl-keyword">delete</span>; <span class="hl-comment">// デバイスは複製できない</span>
+    CameraCapture&amp; <span class="hl-keyword">operator</span>=(<span class="hl-keyword">const</span> CameraCapture&amp;) = <span class="hl-keyword">delete</span>;
+    CameraCapture(CameraCapture&amp;&amp;) = <span class="hl-keyword">default</span>;     <span class="hl-comment">// ムーブ（所有権移転）は許可</span>
+    CameraCapture&amp; <span class="hl-keyword">operator</span>=(CameraCapture&amp;&amp;) = <span class="hl-keyword">default</span>;
+};</code></pre>
+</div>
+
+<h3>カメラキャプチャループの解剖</h3>
+<div class="code-wrap"><span class="code-label">C++（main.cpp の骨格）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-type">int</span> main() {
+    <span class="hl-comment">// 1. CameraCapture を構築（デバイスはまだ開かない）</span>
+    media::CameraCapture cam;
+
+    <span class="hl-comment">// 2. open() でデバイスを開く。カメラ ID は 0 が内蔵カメラ</span>
+    <span class="hl-keyword">if</span> (!cam.open(<span class="hl-number">0</span>)) {
+        std::cerr &lt;&lt; <span class="hl-string">"カメラを開けませんでした\n"</span>;
+        <span class="hl-keyword">return</span> <span class="hl-number">1</span>; <span class="hl-comment">// ← open() を忘れると read_frame() は常に nullopt を返す</span>
+    }
+
+    <span class="hl-comment">// 3. メインループ: 30fps 相当</span>
+    <span class="hl-keyword">while</span> (<span class="hl-keyword">true</span>) {
+        <span class="hl-keyword">auto</span> frame = cam.read_frame(); <span class="hl-comment">// std::optional&lt;cv::Mat&gt;</span>
+        <span class="hl-keyword">if</span> (!frame) <span class="hl-keyword">break</span>;            <span class="hl-comment">// カメラが切断されたら終了</span>
+
+        cv::imshow(<span class="hl-string">"Camera"</span>, *frame);  <span class="hl-comment">// * でoptionalの中身を取り出す</span>
+
+        <span class="hl-comment">// 4. キーボードイベントを処理（GUI スレッドを動かすために必須）</span>
+        <span class="hl-keyword">if</span> (cv::waitKey(<span class="hl-number">33</span>) == <span class="hl-number">27</span>) <span class="hl-keyword">break</span>; <span class="hl-comment">// 33ms 待機 = ~30fps / ESC で終了</span>
+    }
+    <span class="hl-comment">// 5. CameraCapture のデストラクタが cap_.release() を自動で呼ぶ</span>
+}</code></pre>
+</div>
+
+<div class="tip-box"><strong>よくあるミス: open() を呼び忘れる</strong>
+<code>cam.open(0)</code> を呼ばずに <code>cam.read_frame()</code> すると常に <code>std::nullopt</code> が返ります。<code>cam.is_open()</code> で状態を確認するか、コンストラクタでカメラ ID を受け取って自動 open する設計にすると防ぎやすくなります。
+</div>
+
 <h3>なぜ RAII ラッパが必要か</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
 <pre><code class="lang-cpp"><span class="hl-comment">// NG: 例外が飛んだら release() が呼ばれない</span>
 cv::VideoCapture cap;
-cap.open(0);
+cap.open(<span class="hl-number">0</span>);
 <span class="hl-comment">// ... 何か処理 ...</span>
 cap.release(); <span class="hl-comment">// ← 例外で到達しないことがある</span>
 
 <span class="hl-comment">// OK: RAII ラッパで自動解放</span>
 {
     media::CameraCapture cam;
-    cam.open(0);
+    cam.open(<span class="hl-number">0</span>);
     <span class="hl-comment">// ... 何か処理 ...</span>
 } <span class="hl-comment">// ← ここで ~CameraCapture() が自動実行</span></code></pre>
 </div>
@@ -793,11 +1098,17 @@ cap.release(); <span class="hl-comment">// ← 例外で到達しないことが
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
 <pre><code class="lang-cpp"><span class="hl-keyword">auto</span> frame = cam.read_frame(); <span class="hl-comment">// std::optional&lt;cv::Mat&gt;</span>
 
-<span class="hl-keyword">if</span> (frame) {
-    cv::imshow(<span class="hl-string">"window"</span>, *frame); <span class="hl-comment">// * で中の値を取り出す</span>
+<span class="hl-comment">// パターン1: has_value() で確認</span>
+<span class="hl-keyword">if</span> (frame.has_value()) {
+    cv::imshow(<span class="hl-string">"window"</span>, frame.value()); <span class="hl-comment">// value() は値がなければ例外を投げる</span>
 }
 
-<span class="hl-comment">// value_or でデフォルト値</span>
+<span class="hl-comment">// パターン2: operator bool + operator* で簡潔に書く（最も一般的）</span>
+<span class="hl-keyword">if</span> (frame) {
+    cv::imshow(<span class="hl-string">"window"</span>, *frame); <span class="hl-comment">// * で中の値を取り出す（値がなければ UB）</span>
+}
+
+<span class="hl-comment">// パターン3: value_or でデフォルト値（値がなければデフォルトを返す）</span>
 <span class="hl-keyword">auto</span> f = cam.read_frame().value_or(cv::Mat{});</code></pre>
 </div>
 
@@ -868,8 +1179,27 @@ cap.release(); <span class="hl-comment">// ← 例外で到達しないことが
 <tr><td>所有権の型表現</td><td>△（慣習依存）</td><td>○（= delete / unique_ptr）</td></tr>
 </table>
 
+<h3>Rule of Zero が機能するケース</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 全メンバが RAII 型 → Rule of Zero（何も書かなくていい）</span>
+<span class="hl-keyword">class</span> Tracker {
+    std::string name_;             <span class="hl-comment">// string のデストラクタがメモリを解放</span>
+    std::vector&lt;<span class="hl-type">float</span>&gt; history_;   <span class="hl-comment">// vector のデストラクタがヒープを解放</span>
+    std::optional&lt;cv::Mat&gt; frame_; <span class="hl-comment">// optional のデストラクタが Mat を解放</span>
+    <span class="hl-comment">// ← デストラクタを書かなくてよい。コンパイラが全メンバのデストラクタを呼ぶ</span>
+    <span class="hl-comment">// ← コピー/ムーブも自動生成（各メンバの対応する操作を呼び出す）</span>
+};
+
+<span class="hl-comment">// Tracker を持つクラスも Rule of Zero</span>
+<span class="hl-keyword">class</span> Pipeline {
+    Tracker color_tracker_;
+    Tracker flow_tracker_;
+    <span class="hl-comment">// ← 何も書かない。Tracker のデストラクタが連鎖的に呼ばれる</span>
+};</code></pre>
+</div>
+
 <div class="tip-box"><strong>Tip: C++23 の std::unique_resource</strong>
-カスタムリソース（POSIX ファイルディスクリプタなど）を RAII 化する際、C++23 では <code>std::unique_resource</code> を使うと自前でクラスを書かずに済みます。
+カスタムリソース（POSIX ファイルディスクリプタなど）を RAII 化する際、C++23 では <code>std::unique_resource</code> を使うと自前でクラスを書かずに済みます。カメラハンドルを RAII 化するなら <code>std::unique_resource{cap_handle, [](auto h){ close_camera(h); }}</code> のように書けます。
 </div>
 
 <div class="ref-files">
@@ -921,6 +1251,78 @@ cap.release(); <span class="hl-comment">// ← 例外で到達しないことが
     <span class="hl-keyword">const</span> HsvRange&amp; range
 );</code></pre>
 </div>
+
+<h3>HSV 色空間とは</h3>
+<p>OpenCV でよく使う HSV は BGR（Blue-Green-Red）より<strong>色抽出に向いた</strong>色空間です。</p>
+<table>
+<tr><th>チャンネル</th><th>意味</th><th>OpenCV での値域</th><th>物理的な意味</th></tr>
+<tr><td>H（Hue / 色相）</td><td>色の種類</td><td>0〜179（本来の 0〜360° を半分にスケール）</td><td>赤=0, 緑=60, 青=120, 赤=179（循環）</td></tr>
+<tr><td>S（Saturation / 彩度）</td><td>色の鮮やかさ</td><td>0〜255</td><td>0=灰色（無彩色）, 255=鮮やか</td></tr>
+<tr><td>V（Value / 明度）</td><td>明るさ</td><td>0〜255</td><td>0=黒, 255=最も明るい</td></tr>
+</table>
+<p>BGR で「青っぽい色を抽出する」には B チャンネルが高く G・R が低い、という複雑な条件が必要です。HSV なら H を 100〜130 に絞るだけです。照明の変化（明るくなっても）は主に V に影響し、色 H はほぼ変わりません。</p>
+
+<h4>赤の検出が特殊な理由</h4>
+<p>H の値域が円環（0 と 179 が隣接）のため、赤は 0〜10 と 170〜179 の<strong>両端にまたがります</strong>。</p>
+<div class="code-wrap"><span class="code-label">C++（赤の二重 inRange）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp">cv::Mat hsv;
+cv::cvtColor(bgr, hsv, cv::COLOR_BGR2HSV);
+
+cv::Mat mask1, mask2;
+cv::inRange(hsv, cv::Scalar( <span class="hl-number">0</span>, <span class="hl-number">80</span>, <span class="hl-number">80</span>),  cv::Scalar( <span class="hl-number">10</span>, <span class="hl-number">255</span>, <span class="hl-number">255</span>), mask1); <span class="hl-comment">// 低端</span>
+cv::inRange(hsv, cv::Scalar(<span class="hl-number">170</span>, <span class="hl-number">80</span>, <span class="hl-number">80</span>), cv::Scalar(<span class="hl-number">179</span>, <span class="hl-number">255</span>, <span class="hl-number">255</span>), mask2); <span class="hl-comment">// 高端</span>
+cv::Mat red_mask = mask1 | mask2; <span class="hl-comment">// OR 合成</span></code></pre>
+</div>
+
+<h3>std::ranges パイプラインの詳細</h3>
+<p><code>std::ranges</code> は TS の Array メソッドチェーン（<code>filter</code>, <code>map</code>）に対応します。最大の違いは「<strong>遅延評価</strong>」です。</p>
+<div class="code-wrap"><span class="code-label">TypeScript → C++ 対比</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code><span class="hl-comment">// TypeScript: 各メソッドが配列を即時に生成（Eager）</span>
+const areas = contours
+    .filter(c =&gt; cv.contourArea(c) &gt; 100)  // 新配列を作る
+    .map(c =&gt; cv.contourArea(c));            // また新配列を作る
+
+<span class="hl-comment">// C++ std::ranges: 遅延評価（Lazy）— 中間配列を作らない</span>
+<span class="hl-keyword">auto</span> large_contours = contours
+    | std::views::filter([](const cv::Mat&amp; c) { <span class="hl-keyword">return</span> cv::contourArea(c) &gt; <span class="hl-number">100</span>; })
+    | std::views::transform([](const cv::Mat&amp; c) { <span class="hl-keyword">return</span> cv::contourArea(c); });
+<span class="hl-comment">// ここではまだ計算されていない！</span>
+<span class="hl-keyword">for</span> (<span class="hl-type">double</span> area : large_contours) { <span class="hl-comment">// ← ここで初めて評価される</span>
+    std::cout &lt;&lt; area &lt;&lt; <span class="hl-string">"\n"</span>;
+}</code></pre>
+</div>
+<p>遅延評価のメリット: 全要素を処理せず必要な分だけ計算できます。<code>std::views::take(5)</code> と組み合わせると最初の5要素だけを効率的に取り出せます。</p>
+
+<h3>std::span — コピーしない「借用ビュー」</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// std::span を使わない場合: vectorをコピーしてしまう</span>
+<span class="hl-type">double</span> max_area(std::vector&lt;cv::Mat&gt; contours) { <span class="hl-comment">// コピーが発生！</span>
+    ...
+}
+
+<span class="hl-comment">// span を使う: コピーなしで「借りる」(TS の ReadonlyArray&lt;T&gt; に近い)</span>
+<span class="hl-type">double</span> max_area(std::span&lt;<span class="hl-keyword">const</span> cv::Mat&gt; contours) { <span class="hl-comment">// ポインタ+サイズの2ワードのみ渡す</span>
+    <span class="hl-keyword">auto</span> it = std::ranges::max_element(contours,
+        [](<span class="hl-keyword">const</span> cv::Mat&amp; a, <span class="hl-keyword">const</span> cv::Mat&amp; b) {
+            <span class="hl-keyword">return</span> cv::contourArea(a) &lt; cv::contourArea(b);
+        });
+    <span class="hl-keyword">return</span> it != contours.end() ? cv::contourArea(*it) : <span class="hl-number">0.0</span>;
+}
+
+<span class="hl-comment">// 呼び出し側: vector, array, C配列など何でも渡せる</span>
+std::vector&lt;cv::Mat&gt; cs = find_contours(frame);
+<span class="hl-type">double</span> m = max_area(cs); <span class="hl-comment">// 暗黙に span に変換される</span></code></pre>
+</div>
+
+<h3>const T& vs T vs T&& の使い分けフローチャート</h3>
+<table>
+<tr><th>状況</th><th>書き方</th><th>理由</th></tr>
+<tr><td>読むだけ（変更しない）、大きな型</td><td><code>const T&amp; val</code></td><td>コピーなし。変更不可を型で保証</td></tr>
+<tr><td>読むだけ、小さな型（int, float, char）</td><td><code>T val</code></td><td>コピーのほうがレジスタに乗って速い</td></tr>
+<tr><td>この関数でリソースを消費する（sink）</td><td><code>T val</code>（呼び元が move する）</td><td>ムーブで渡すことができる</td></tr>
+<tr><td>中身を変更したい（副作用）</td><td><code>T&amp; val</code></td><td>参照で変更（戻り値で返す方が推奨）</td></tr>
+<tr><td>ムーブ専用の sink 引数</td><td><code>T&amp;&amp; val</code></td><td>rvalue しか受け取らない強制</td></tr>
+</table>
 
 <h3>cv::Mat の参照カウントと const& の関係</h3>
 <p><code>cv::Mat</code> は内部で参照カウントを持ち、<code>=</code> 代入はシャローコピー（バッファ共有）です。<code>const cv::Mat&amp;</code> で渡すと参照カウントも増えないため最も効率的です。独立コピーが必要な場合は <code>.clone()</code> を明示的に呼びます。</p>
@@ -1046,6 +1448,84 @@ std::string format(<span class="hl-keyword">const</span> OscValue&amp; v) {
 }</code></pre>
 </div>
 
+<h3>OSC プロトコルの基礎</h3>
+<p>OSC（Open Sound Control）は UDP ベースのメッセージングプロトコルです。Max/MSP、SuperCollider、Processing などのクリエイティブツールが標準サポートしています。</p>
+<table>
+<tr><th>項目</th><th>OSC</th><th>HTTP REST の相当</th></tr>
+<tr><td>トランスポート</td><td>UDP（コネクションレス、低遅延）</td><td>TCP</td></tr>
+<tr><td>アドレス</td><td><code>/tracker/centroid/x</code>（パス形式）</td><td>URL エンドポイント</td></tr>
+<tr><td>引数型</td><td>int, float, string, blob など</td><td>JSON の型</td></tr>
+<tr><td>エンコード</td><td>バイナリ（big-endian）</td><td>テキスト（JSON/XML）</td></tr>
+<tr><td>信頼性</td><td>なし（パケットロス可能）</td><td>TCP が保証</td></tr>
+</table>
+
+<h4>OSC メッセージの構造</h4>
+<div class="code-wrap"><span class="code-label">バイト列（16 進数で表示）</span>
+<pre><code><span class="hl-comment">// メッセージ: /tracker/x (float: 0.5)</span>
+2f 74 72 61 63 6b 65 72 2f 78 00 00  <span class="hl-comment">← address: "/tracker/x" + パディング</span>
+2c 66 00 00                           <span class="hl-comment">← type tag string: ",f" + パディング</span>
+3f 00 00 00                           <span class="hl-comment">← float 0.5 (big-endian)</span></code></pre>
+</div>
+
+<h4>Big-endian エンコードとは</h4>
+<p>同じ整数値でも、バイトをメモリに並べる順序が CPU アーキテクチャで異なります。ネットワークプロトコルは一般的に big-endian（最上位バイトが先）を使います。</p>
+<div class="code-wrap"><span class="code-label">C++（big-endian 変換）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 整数 0x12345678 のバイト表現</span>
+<span class="hl-comment">// Little-endian (x86/ARM デフォルト): 78 56 34 12 (下位バイトが先)</span>
+<span class="hl-comment">// Big-endian    (ネットワーク順):      12 34 56 78 (上位バイトが先)</span>
+
+<span class="hl-comment">// minimal_osc.hpp での変換</span>
+<span class="hl-type">int32_t</span> to_big_endian(<span class="hl-type">int32_t</span> v) {
+    <span class="hl-keyword">return</span> __builtin_bswap32(v); <span class="hl-comment">// バイト順を反転</span>
+}
+<span class="hl-comment">// float も同様: memcpy でビット列を保ちながら bswap する</span></code></pre>
+</div>
+
+<h3>std::visit と overload パターンの深掘り</h3>
+<div class="code-wrap"><span class="code-label">C++（型ごとに処理を振り分ける）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// overload パターン: 複数のラムダをまとめた visitor を作る</span>
+<span class="hl-keyword">template</span>&lt;<span class="hl-keyword">typename</span>... Ts&gt;
+<span class="hl-keyword">struct</span> overload : Ts... { <span class="hl-keyword">using</span> Ts::<span class="hl-keyword">operator</span>()...; };
+
+<span class="hl-keyword">using</span> OscValue = std::variant&lt;<span class="hl-type">int</span>, <span class="hl-type">float</span>, std::string&gt;;
+OscValue val = <span class="hl-number">42</span>;
+
+<span class="hl-keyword">auto</span> type_name = std::visit(overload{
+    [](<span class="hl-type">int</span>)         { <span class="hl-keyword">return</span> <span class="hl-string">"int"</span>; },
+    [](<span class="hl-type">float</span>)       { <span class="hl-keyword">return</span> <span class="hl-string">"float"</span>; },
+    [](std::string) { <span class="hl-keyword">return</span> <span class="hl-string">"string"</span>; },
+}, val); <span class="hl-comment">// → "int"</span>
+
+<span class="hl-comment">// 型を追加したとき（bool）: overload のどれにも一致しなければコンパイルエラー</span>
+<span class="hl-comment">// TS の switch 文の "never チェック" に相当する網羅性保証がコンパイル時に得られる</span></code></pre>
+</div>
+
+<h4>variant に存在しない型を get しようとすると</h4>
+<div class="code-wrap"><span class="code-label">C++（実行時エラーの例）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp">OscValue val = <span class="hl-number">3.14f</span>; <span class="hl-comment">// float が入っている</span>
+
+<span class="hl-comment">// std::get で間違った型を取り出そうとすると std::bad_variant_access 例外</span>
+<span class="hl-keyword">try</span> {
+    <span class="hl-type">int</span> v = std::get&lt;<span class="hl-type">int</span>&gt;(val); <span class="hl-comment">// ← 実行時例外!</span>
+} <span class="hl-keyword">catch</span> (<span class="hl-keyword">const</span> std::bad_variant_access&amp;) {
+    std::cerr &lt;&lt; <span class="hl-string">"型が違います\n"</span>;
+}
+
+<span class="hl-comment">// 安全に取り出す方法</span>
+<span class="hl-keyword">if</span> (<span class="hl-keyword">auto</span>* p = std::get_if&lt;<span class="hl-type">float</span>&gt;(&amp;val)) {
+    std::cout &lt;&lt; *p; <span class="hl-comment">// p が nullptr でなければ使える</span>
+}</code></pre>
+</div>
+
+<h4>std::variant vs std::any の選び方</h4>
+<table>
+<tr><th></th><th>std::variant&lt;T1, T2...&gt;</th><th>std::any</th></tr>
+<tr><td>型の制限</td><td>列挙した型のみ</td><td>任意の型（コピー可能）</td></tr>
+<tr><td>型安全</td><td>○（コンパイル時に型リストが確定）</td><td>△（実行時のみ）</td></tr>
+<tr><td>メモリ</td><td>最大型のサイズ + タグ</td><td>小型はインライン、大型はヒープ確保</td></tr>
+<tr><td>用途</td><td>OSC の型集合など有限かつ既知の場合</td><td>プラグイン・外部データなど型が不明な場合</td></tr>
+</table>
+
 <h3>oscpack の arm64 問題と自前実装</h3>
 <p>oscpack ライブラリは Apple Silicon (arm64) で <code>int32</code> 型定義の衝突が起き使用不可です。本プロジェクトでは OSC 1.0 の最小実装を <code>minimal_osc.hpp</code> に自前実装しています（UDP ソケット + big-endian 変換のみ）。</p>
 
@@ -1169,6 +1649,80 @@ std::visit(visitor, val);</code></pre>
     <span class="hl-string">"ColorTracker は Detector concept を満たさなければならない"</span>);</code></pre>
 </div>
 
+<h3>requires 式の4種類</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-keyword">template</span> &lt;<span class="hl-keyword">typename</span> T&gt;
+<span class="hl-keyword">concept</span> Detector = <span class="hl-keyword">requires</span>(T t, <span class="hl-keyword">const</span> cv::Mat&amp; frame) {
+    <span class="hl-comment">// 1. 単純要求: 「この式がコンパイルできること」</span>
+    t.process(frame);
+
+    <span class="hl-comment">// 2. 型要求: 「この型が存在すること」</span>
+    <span class="hl-keyword">typename</span> T::output_type;
+
+    <span class="hl-comment">// 3. 複合要求: 「この式がコンパイルでき、かつ戻り値型が一致すること」</span>
+    { t.process(frame) } -&gt; std::same_as&lt;std::optional&lt;DetectorOutput&gt;&gt;;
+    { t.name()         } -&gt; std::convertible_to&lt;std::string&gt;;
+
+    <span class="hl-comment">// 4. ネスト要求: 「この constraints が成立すること」</span>
+    <span class="hl-keyword">requires</span> std::copyable&lt;T&gt;;
+};</code></pre>
+</div>
+
+<h3>コンセプト違反時のエラーメッセージ</h3>
+<div class="code-wrap"><span class="code-label">コンパイルエラー（concept 違反）</span>
+<pre><code><span class="hl-comment">// BadDetector は process() を持たない</span>
+struct BadDetector {};
+
+run_detector(BadDetector{}, frame);
+<span class="hl-comment">// エラー例（clang++）:</span>
+<span class="hl-comment">// error: no matching function for call to 'run_detector'</span>
+<span class="hl-comment">// note: constraints not satisfied</span>
+<span class="hl-comment">// note: 'Detector&lt;BadDetector&gt;' was not satisfied:</span>
+<span class="hl-comment">//   { t.process(frame) } -&gt; std::same_as&lt;...&gt;</span>
+<span class="hl-comment">//   ^~~~~~~~~~~~~~~~~~~~ ← どの要件を満たさなかったかが明示される</span></code></pre>
+</div>
+<p>仮想関数ベースの場合、コンパイル時に「process() を実装し忘れた」は検出されず、実行時に純粋仮想関数呼び出しエラー（UB または abort）になります。concept はこれをコンパイル時エラーに変えます。</p>
+
+<h3>制約の包摂（constraint subsumption）</h3>
+<p>より具体的な concept は一般的な concept より「勝ち」ます。テンプレートのオーバーロード解決で使われます。</p>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 一般的な concept</span>
+<span class="hl-keyword">template</span> &lt;<span class="hl-keyword">typename</span> T&gt;
+<span class="hl-keyword">concept</span> Detector = <span class="hl-keyword">requires</span>(T t, <span class="hl-keyword">const</span> cv::Mat&amp; f) {
+    { t.process(f) } -&gt; std::same_as&lt;std::optional&lt;DetectorOutput&gt;&gt;;
+};
+
+<span class="hl-comment">// より具体的な concept (Detector を包摂)</span>
+<span class="hl-keyword">template</span> &lt;<span class="hl-keyword">typename</span> T&gt;
+<span class="hl-keyword">concept</span> GpuDetector = Detector&lt;T&gt; &amp;&amp; <span class="hl-keyword">requires</span>(T t) {
+    { t.supports_cuda() } -&gt; std::same_as&lt;<span class="hl-type">bool</span>&gt;;
+};
+
+<span class="hl-comment">// オーバーロード: GpuDetector の方が具体的なので優先される</span>
+<span class="hl-keyword">template</span> &lt;Detector T&gt;    <span class="hl-keyword">void</span> run(T&amp; d) { std::cout &lt;&lt; <span class="hl-string">"CPU\n"</span>; }
+<span class="hl-keyword">template</span> &lt;GpuDetector T&gt; <span class="hl-keyword">void</span> run(T&amp; d) { std::cout &lt;&lt; <span class="hl-string">"GPU\n"</span>; } <span class="hl-comment">// こちらが勝つ</span></code></pre>
+</div>
+
+<h3>C++20 縮約関数テンプレート構文</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 従来の書き方</span>
+<span class="hl-keyword">template</span> &lt;Detector T&gt;
+<span class="hl-keyword">void</span> run_detector(T&amp; detector, <span class="hl-keyword">const</span> cv::Mat&amp; frame);
+
+<span class="hl-comment">// C++20 縮約構文: auto パラメータに concept を付ける</span>
+<span class="hl-keyword">void</span> run_detector(Detector <span class="hl-keyword">auto</span>&amp; detector, <span class="hl-keyword">const</span> cv::Mat&amp; frame);
+<span class="hl-comment">// 上記と完全に等価。ラムダのような簡潔さで書ける</span></code></pre>
+</div>
+
+<h3>virtual 関数 vs concept の選び方</h3>
+<table>
+<tr><th>状況</th><th>推奨</th><th>理由</th></tr>
+<tr><td>型が実行時に決まる（プラグインなど）</td><td>virtual 関数（動的ディスパッチ）</td><td>実行時多態性が必要</td></tr>
+<tr><td>型がコンパイル時に決まる</td><td>concept + template（静的ディスパッチ）</td><td>コスト ゼロ、インライン化可能</td></tr>
+<tr><td>異なる型を一つのコンテナに入れたい</td><td>virtual 関数 または std::variant</td><td>同じ基底型を持つ必要がある</td></tr>
+<tr><td>型の制約を明確に文書化したい</td><td>concept</td><td>エラーメッセージが明確</td></tr>
+</table>
+
 <h3>新しい Detector を追加するときの工数</h3>
 <p>concept 化前は「インターフェースクラスを継承して <code>override</code> を書く」手順が必要でした。concept 化後は <strong>process() メソッドを実装するだけ</strong>で新しい検出器が動作します。Chapter 5 で OpticalFlowDetector を追加する際に、この恩恵を体感できます。</p>
 
@@ -1268,6 +1822,82 @@ class ColorTracker implements Detector { ... }
 <tr><td>std::array vs std::vector</td><td>固定サイズはスタック（array）、動的サイズはヒープ（vector）</td></tr>
 <tr><td>cv::Mat::clone()</td><td>前フレームを保存するには deep copy が必要</td></tr>
 </table>
+
+<h3>Farneback オプティカルフロー アルゴリズムの概要</h3>
+<p>Farneback 法は「Dense」オプティカルフロー手法の一つです。2つのグレースケールフレーム間の<strong>全ピクセルの動きベクトル</strong>を計算します。</p>
+<ol>
+<li>各ピクセル周辺を多項式（2次関数）で近似する</li>
+<li>2フレーム間で多項式の係数を比較し、最も説明が一致する変位（dx, dy）を求める</li>
+<li>結果は <code>cv::Mat</code> の2チャンネル（dx, dy）浮動小数点行列として返る</li>
+</ol>
+
+<h4>cv::calcOpticalFlowFarneback のパラメータ</h4>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp">cv::Mat flow;
+cv::calcOpticalFlowFarneback(
+    *prev_gray_,  <span class="hl-comment">// 前フレーム（グレースケール）</span>
+    gray,         <span class="hl-comment">// 現在フレーム（グレースケール）</span>
+    flow,         <span class="hl-comment">// 出力: 2ch float mat (flow[y][x] = (dx, dy))</span>
+    <span class="hl-number">0.5</span>,          <span class="hl-comment">// pyrScale: ピラミッドのスケール比（0.5 = 各レベルで半分）</span>
+    <span class="hl-number">3</span>,            <span class="hl-comment">// levels: ピラミッドの段数。多いほど大きな動きを捉えられる</span>
+    <span class="hl-number">15</span>,           <span class="hl-comment">// winsize: 平均化ウィンドウサイズ。大きいほど滑らか・遅い</span>
+    <span class="hl-number">3</span>,            <span class="hl-comment">// iterations: 各ピラミッドレベルでの反復回数</span>
+    <span class="hl-number">5</span>,            <span class="hl-comment">// polyN: 多項式近似の近傍ピクセル数（5 or 7 が一般的）</span>
+    <span class="hl-number">1.2</span>,          <span class="hl-comment">// polySigma: ガウス標準偏差。polyN=5 なら 1.1, polyN=7 なら 1.5 推奨</span>
+    <span class="hl-number">0</span>             <span class="hl-comment">// flags: 0 でよい（OPTFLOW_USE_INITIAL_FLOW などのオプション）</span>
+);
+
+<span class="hl-comment">// 動き量の平均を計算</span>
+cv::Scalar mean_flow = cv::mean(cv::abs(flow));
+<span class="hl-type">double</span> magnitude = (mean_flow[<span class="hl-number">0</span>] + mean_flow[<span class="hl-number">1</span>]) / <span class="hl-number">2.0</span>; <span class="hl-comment">// dx, dy の平均</span></code></pre>
+</div>
+
+<h3>なぜ初回は nullopt を返すか（コード追跡）</h3>
+<div class="code-wrap"><span class="code-label">C++（process() の処理フロー）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 1回目の process() 呼び出し</span>
+<span class="hl-comment">// → prev_gray_ は std::nullopt</span>
+<span class="hl-comment">// → 計算できないので gray を保存して nullopt を返す</span>
+
+<span class="hl-comment">// 2回目以降の process() 呼び出し</span>
+<span class="hl-comment">// → prev_gray_ に前フレームが入っている</span>
+<span class="hl-comment">// → フロー計算を実行して DetectorOutput を返す</span>
+<span class="hl-comment">// → prev_gray_ を現在のフレームで更新</span></code></pre>
+</div>
+<p>この設計はパイプライン側でも同様に扱えます: <code>if (result) { osc_sender.send(*result); }</code> と書けば初回フレームは自然にスキップされます。<code>nullptr</code> チェックより型で意図が伝わります。</p>
+
+<h3>std::array&lt;T, N&gt; のコンパイル時サイズ保証</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// std::array: サイズがコンパイル時に決まる（スタック上に置かれる）</span>
+std::array&lt;<span class="hl-type">float</span>, <span class="hl-number">16</span>&gt; buf;
+
+<span class="hl-comment">// コンパイル時に境界チェックが可能</span>
+<span class="hl-keyword">static_assert</span>(buf.size() == <span class="hl-number">16</span>); <span class="hl-comment">// OK</span>
+
+<span class="hl-comment">// std::get&lt;N&gt; は N がコンパイル時定数のとき境界チェックをコンパイル時に行う</span>
+<span class="hl-keyword">auto</span> val = std::get&lt;<span class="hl-number">20</span>&gt;(buf); <span class="hl-comment">// ← コンパイルエラー（範囲外）</span>
+
+<span class="hl-comment">// std::vector: サイズが実行時に決まる（ヒープ上）</span>
+std::vector&lt;<span class="hl-type">float</span>&gt; dyn(n); <span class="hl-comment">// n は実行時変数</span>
+dyn[<span class="hl-number">100</span>]; <span class="hl-comment">// ← Release ビルドでは UB（境界外）。Debug では assert で停止</span></code></pre>
+</div>
+
+<h3>False sharing — キャッシュライン競合</h3>
+<p>異なるスレッドが<strong>別々の変数</strong>を読み書きしているのに、それらが同じキャッシュライン（64バイト）に入っていると、CPUキャッシュの一貫性プロトコルが無駄にラインを無効化し合って性能が下がります。</p>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// NG: head_ と tail_ が同じキャッシュライン → false sharing</span>
+<span class="hl-keyword">struct</span> SpscQueue {
+    std::atomic&lt;<span class="hl-type">size_t</span>&gt; head_{<span class="hl-number">0</span>};  <span class="hl-comment">// Producer が書く</span>
+    std::atomic&lt;<span class="hl-type">size_t</span>&gt; tail_{<span class="hl-number">0</span>};  <span class="hl-comment">// Consumer が書く</span>
+    <span class="hl-comment">// 両者が同じ 64B ライン → 互いに invalidate し合う</span>
+};
+
+<span class="hl-comment">// OK: alignas(64) で別ラインに分離</span>
+<span class="hl-keyword">struct</span> SpscQueue {
+    <span class="hl-keyword">alignas</span>(<span class="hl-number">64</span>) std::atomic&lt;<span class="hl-type">size_t</span>&gt; head_{<span class="hl-number">0</span>};
+    <span class="hl-keyword">alignas</span>(<span class="hl-number">64</span>) std::atomic&lt;<span class="hl-type">size_t</span>&gt; tail_{<span class="hl-number">0</span>};
+    <span class="hl-comment">// 別ラインに分かれて互いに干渉しない</span>
+};</code></pre>
+</div>
 
 <h3>前フレーム保持の設計</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
@@ -1380,6 +2010,77 @@ std::vector&lt;Particle&gt; particles;</code></pre>
 <tr><td>コルーチン（C++20）</td><td>co_yield / co_return。軽量な非同期処理（補足として説明）</td></tr>
 </table>
 
+<h3>データ競合（Data Race）とは</h3>
+<div class="tldr"><strong>TL;DR</strong>
+<ul>
+<li>2つのスレッドが同じメモリを<strong>少なくとも一方が書き込み</strong>かつ<strong>同期なし</strong>でアクセス → 未定義動作</li>
+<li>TypeScript は基本的にシングルスレッド（Worker 経由のみ）なのでこの問題がない</li>
+<li>C++ ではデータ競合を開発者が防ぐ責任を持つ</li>
+</ul>
+</div>
+
+<div class="code-wrap"><span class="code-label">C++（データ競合の壊れた例）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-type">int</span> counter = <span class="hl-number">0</span>; <span class="hl-comment">// 共有変数</span>
+
+std::jthread t1([&amp;](<span class="hl-keyword">auto</span>) { <span class="hl-keyword">for</span>(<span class="hl-type">int</span> i=<span class="hl-number">0</span>; i&lt;<span class="hl-number">10000</span>; ++i) ++counter; }); <span class="hl-comment">// ← 書き込み</span>
+std::jthread t2([&amp;](<span class="hl-keyword">auto</span>) { <span class="hl-keyword">for</span>(<span class="hl-type">int</span> i=<span class="hl-number">0</span>; i&lt;<span class="hl-number">10000</span>; ++i) ++counter; }); <span class="hl-comment">// ← 書き込み</span>
+<span class="hl-comment">// 結果: 20000 にならない（競合で一部の ++counter が消える）</span>
+
+<span class="hl-comment">// 修正: std::atomic&lt;int&gt; を使う</span>
+std::atomic&lt;<span class="hl-type">int</span>&gt; counter{<span class="hl-number">0</span>};
+<span class="hl-comment">// ++counter は原子操作になる（分割されない）</span></code></pre>
+</div>
+
+<h3>happens-before とメモリモデル</h3>
+<p>「happens-before」とは「操作 A の効果が操作 B から必ず見える」という保証です。C++ のメモリモデルはこれを以下の手段で実現します。</p>
+<table>
+<tr><th>同期手段</th><th>happens-before 保証</th></tr>
+<tr><td>mutex の lock/unlock</td><td>unlock → lock の間に happens-before が成立</td></tr>
+<tr><td>atomic + release/acquire</td><td>release store → acquire load の間に happens-before が成立</td></tr>
+<tr><td>std::atomic::store(seq_cst)</td><td>全スレッドに対して全順序を保証（最も強い）</td></tr>
+<tr><td>relaxed atomic</td><td>原子性はあるが順序保証なし</td></tr>
+</table>
+
+<h3>SpscQueue の実装解剖</h3>
+<div class="code-wrap"><span class="code-label">C++（SpscQueue の核心部分）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-keyword">template</span>&lt;<span class="hl-keyword">typename</span> T, <span class="hl-type">size_t</span> N&gt;
+<span class="hl-keyword">class</span> SpscQueue {
+    std::array&lt;T, N&gt; buf_;
+    <span class="hl-keyword">alignas</span>(<span class="hl-number">64</span>) std::atomic&lt;<span class="hl-type">size_t</span>&gt; head_{<span class="hl-number">0</span>}; <span class="hl-comment">// Producer が進める</span>
+    <span class="hl-keyword">alignas</span>(<span class="hl-number">64</span>) std::atomic&lt;<span class="hl-type">size_t</span>&gt; tail_{<span class="hl-number">0</span>}; <span class="hl-comment">// Consumer が進める</span>
+
+<span class="hl-keyword">public</span>:
+    <span class="hl-comment">// Producer: データを書き込む</span>
+    <span class="hl-type">bool</span> try_push(T item) {
+        <span class="hl-type">size_t</span> h = head_.load(std::memory_order_relaxed); <span class="hl-comment">// 自分の head を読む</span>
+        <span class="hl-type">size_t</span> next = (h + <span class="hl-number">1</span>) % N;
+        <span class="hl-keyword">if</span> (next == tail_.load(std::memory_order_acquire)) <span class="hl-keyword">return</span> <span class="hl-keyword">false</span>; <span class="hl-comment">// キュー満杯</span>
+        buf_[h] = std::move(item);
+        head_.store(next, std::memory_order_release); <span class="hl-comment">// Consumer に「書き込み完了」を通知</span>
+        <span class="hl-keyword">return</span> <span class="hl-keyword">true</span>;
+    }
+
+    <span class="hl-comment">// Consumer: データを読み出す</span>
+    std::optional&lt;T&gt; try_pop() {
+        <span class="hl-type">size_t</span> t = tail_.load(std::memory_order_relaxed);
+        <span class="hl-keyword">if</span> (t == head_.load(std::memory_order_acquire)) <span class="hl-keyword">return</span> std::nullopt; <span class="hl-comment">// 空</span>
+        T item = std::move(buf_[t]);
+        tail_.store((t + <span class="hl-number">1</span>) % N, std::memory_order_release);
+        <span class="hl-keyword">return</span> item;
+    }
+};</code></pre>
+</div>
+<p>acquire ロードで「release ストア以前の書き込みが見える」が保証されます。これが happens-before の実現です。mutex を使わないため lock/unlock コストがなく、リアルタイム処理に適しています。</p>
+
+<h3>std::thread vs std::jthread</h3>
+<table>
+<tr><th></th><th>std::thread（C++11）</th><th>std::jthread（C++20）</th></tr>
+<tr><td>デストラクタの動作</td><td>joinされていなければ <code>std::terminate()</code>（プログラム終了）</td><td>自動で <code>request_stop() + join()</code></td></tr>
+<tr><td>停止メカニズム</td><td>自前で atomic フラグを用意する必要がある</td><td><code>std::stop_token</code> が渡される</td></tr>
+<tr><td>RAII</td><td>△（明示的 join が必要）</td><td>○（デストラクタで完結）</td></tr>
+<tr><td>TS 相当</td><td>—</td><td>AbortController + AbortSignal に相当</td></tr>
+</table>
+
 <h3>パイプライン設計</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
 <pre><code class="lang-cpp"><span class="hl-keyword">class</span> Pipeline {
@@ -1456,11 +2157,35 @@ worker.request_stop(); <span class="hl-comment">// 停止要求</span>
 
 <h3>SpscQueue のメモリ順序</h3>
 <table>
-<tr><th>memory_order</th><th>意味</th></tr>
-<tr><td>relaxed</td><td>順序保証なし（自分のカウンタ読みは他スレッドと関係ない）</td></tr>
-<tr><td>acquire</td><td>これ以降の読み書きをこの操作より前に移動させない</td></tr>
-<tr><td>release</td><td>これ以前の読み書きをこの操作より後に移動させない</td></tr>
+<tr><th>memory_order</th><th>意味</th><th>用途</th></tr>
+<tr><td>relaxed</td><td>順序保証なし（原子性のみ）</td><td>自スレッドのカウンタ読み（他スレッドと関係ない）</td></tr>
+<tr><td>acquire</td><td>これ以降の読み書きをこの操作より前に移動させない</td><td>Consumer が head_ を確認するとき</td></tr>
+<tr><td>release</td><td>これ以前の読み書きをこの操作より後に移動させない</td><td>Producer が head_ を更新して書き込み完了を通知するとき</td></tr>
+<tr><td>seq_cst</td><td>全スレッドで全順序を保証</td><td>正確性を優先する場合（コストあり）</td></tr>
 </table>
+
+<h3>C++20 コルーチン — ジェネレータパターン</h3>
+<p>C++20 コルーチンの基本概念を理解するために、<code>co_yield</code> を使った Generator パターンを見てみましょう。Chapter 6 では jthread を採用していますが、コルーチンはより高度な非同期設計の基礎になります。</p>
+<div class="code-wrap"><span class="code-label">C++（Generator コルーチン概念）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// C++23 の std::generator を使った無限シーケンス（概念説明用）</span>
+<span class="hl-comment">// 実際には cppcoro や手動 promise_type が必要（C++20 ではまだ標準ではない）</span>
+
+<span class="hl-comment">// TypeScript 相当:</span>
+<span class="hl-comment">// async function* cameraFrames() {</span>
+<span class="hl-comment">//   while (true) { yield await camera.read(); }</span>
+<span class="hl-comment">// }</span>
+
+<span class="hl-comment">// C++ コルーチンが TS と根本的に違う点:</span>
+<span class="hl-comment">// TS: await はイベントループに制御を戻す（スケジューラが自動）</span>
+<span class="hl-comment">// C++: co_await/co_yield は呼び出し元に制御を戻すが、</span>
+<span class="hl-comment">//      「次にいつ再開するか」は開発者が Awaitable オブジェクトで制御する</span>
+
+<span class="hl-comment">// co_yield のフロー:</span>
+<span class="hl-comment">// 1. コルーチン内で co_yield value;</span>
+<span class="hl-comment">// 2. value が呼び出し元に返る</span>
+<span class="hl-comment">// 3. コルーチンは中断（スタックフレームは coroutine_handle に保存）</span>
+<span class="hl-comment">// 4. 呼び出し元が handle.resume() を呼ぶとコルーチンが再開</span></code></pre>
+</div>
 
 <div class="tip-box"><strong>Tip: stop_source を分離するパターン</strong>
 <code>std::stop_source</code> を別に持つと、<code>jthread</code> の寿命と停止タイミングを独立して制御できます。スレッドプール的な設計で複数スレッドに一括で停止要求を送る場合に便利です。
@@ -1498,6 +2223,69 @@ worker.request_stop(); <span class="hl-comment">// 停止要求</span>
 <tr><td>toml++ ライブラリ</td><td>FetchContent で取り込む TOML パーサ</td></tr>
 <tr><td>and_then / or_else</td><td>モナディックチェーン（C++23）。Promise チェーンに相当</td></tr>
 </table>
+
+<h3>設定ファイルフォーマット比較</h3>
+<table>
+<tr><th></th><th>TOML</th><th>JSON</th><th>YAML</th></tr>
+<tr><td>コメント</td><td>○（# で始まる行）</td><td>×</td><td>○</td></tr>
+<tr><td>型</td><td>明示的（int/float を区別）</td><td>数値のみ（int/float の区別なし）</td><td>文脈依存</td></tr>
+<tr><td>可読性</td><td>高い</td><td>中程度</td><td>高い（インデント依存）</td></tr>
+<tr><td>パーサの複雑さ</td><td>中程度</td><td>シンプル</td><td>複雑（アンカー・エイリアスなど）</td></tr>
+<tr><td>ライブラリ</td><td>toml++（ヘッダオンリー）</td><td>nlohmann/json</td><td>yaml-cpp</td></tr>
+<tr><td>典型用途</td><td>設定ファイル</td><td>API データ交換</td><td>CI/CD 設定、Kubernetes</td></tr>
+</table>
+
+<h3>ConfigError の型設計</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// エラーの種類を列挙型で表現（エラー処理の分岐に使える）</span>
+<span class="hl-keyword">enum class</span> ConfigErrorKind {
+    FileNotFound,
+    ParseError,
+    MissingField,
+    InvalidValue,
+};
+
+<span class="hl-keyword">struct</span> ConfigError {
+    ConfigErrorKind kind;
+    std::string message;   <span class="hl-comment">// 人間向けの説明</span>
+    std::string field;     <span class="hl-comment">// どのフィールドで起きたか（オプション）</span>
+};
+
+<span class="hl-comment">// 使い方: エラーの種類で処理を分岐</span>
+<span class="hl-keyword">auto</span> result = load_config(<span class="hl-string">"config.toml"</span>);
+<span class="hl-keyword">if</span> (!result) {
+    <span class="hl-keyword">switch</span> (result.error().kind) {
+        <span class="hl-keyword">case</span> ConfigErrorKind::FileNotFound:
+            std::cout &lt;&lt; <span class="hl-string">"設定ファイルが見つかりません。デフォルト設定を使用します\n"</span>;
+            <span class="hl-keyword">break</span>;
+        <span class="hl-keyword">case</span> ConfigErrorKind::ParseError:
+            std::cerr &lt;&lt; <span class="hl-string">"設定ファイルの構文エラー: "</span> &lt;&lt; result.error().message &lt;&lt; <span class="hl-string">"\n"</span>;
+            <span class="hl-keyword">return</span> <span class="hl-number">1</span>;
+        <span class="hl-keyword">default</span>:
+            <span class="hl-keyword">break</span>;
+    }
+}</code></pre>
+</div>
+
+<h3>tl::expected — C++20 フォールバック</h3>
+<p><code>std::expected</code> は C++23 ですが、<code>tl::expected</code> を使えば C++20 でも同じ API が使えます。</p>
+<div class="code-wrap"><span class="code-label">CMakeLists.txt</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cmake">FetchContent_Declare(
+    tl-expected
+    GIT_REPOSITORY https://github.com/TartanLlama/expected.git
+    GIT_TAG        v1.1.0
+)
+FetchContent_MakeAvailable(tl-expected)
+target_link_libraries(my_target PRIVATE tl::expected)</code></pre>
+</div>
+<div class="code-wrap"><span class="code-label">C++（tl::expected 使用例）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-preproc">#include &lt;tl/expected.hpp&gt;</span>
+
+<span class="hl-comment">// std::expected と完全互換の API</span>
+tl::expected&lt;Config, ConfigError&gt; load_config(std::string_view path);
+
+<span class="hl-comment">// C++23 に移行するときは tl:: を std:: に置き換えるだけ</span></code></pre>
+</div>
 
 <h3>Config 構造体と load_config</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
@@ -1567,6 +2355,16 @@ TOML は JSON より人間が書きやすく、コメントも書けます。
 </ul>
 </div>
 
+<h3>例外のコスト — ゼロコスト例外モデル</h3>
+<p>C++ の例外実装は「ゼロコスト例外（Zero-cost exceptions）」モデルを採用しています。</p>
+<table>
+<tr><th>状況</th><th>コスト</th></tr>
+<tr><td>例外が<strong>投げられない</strong>ハッピーパス</td><td>実行時コストほぼゼロ（バイナリに例外テーブルが追加されるのみ）</td></tr>
+<tr><td>例外が<strong>投げられた</strong>アンハッピーパス</td><td>スタックアンワインドのコストが発生（数μs〜数ms）</td></tr>
+<tr><td>バイナリサイズ</td><td>例外テーブル（landing pad）で数%〜数十%増加</td></tr>
+</table>
+<p>リアルタイム処理（映像処理の 33ms フレーム予算）では、例外が投げられないハッピーパスは無料ですが、バイナリサイズの増大と「例外を投げた瞬間の遅延」が問題になり得ます。<code>-fno-exceptions</code> で完全に無効化することも可能です（その場合 <code>std::expected</code> が必須）。</p>
+
 <h3>いつ例外を使い、いつ expected を使うか</h3>
 <table>
 <tr><th>例外が適切</th><th>std::expected が適切</th></tr>
@@ -1574,6 +2372,40 @@ TOML は JSON より人間が書きやすく、コメントも書けます。
 <tr><td>本当に予期しない失敗（バグ、OOM）</td><td>リアルタイム処理（レイテンシが重要）</td></tr>
 <tr><td>スタック深い位置からトップへの伝搬</td><td>呼び出し元にエラー処理を強制したい場合</td></tr>
 </table>
+
+<h3>and_then / or_else の詳細</h3>
+<div class="code-wrap"><span class="code-label">C++（モナディックチェーン詳細）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// and_then: 成功時に変換を適用（失敗はそのまま通過）</span>
+<span class="hl-comment">// std::expected&lt;A, E&gt; → (A → std::expected&lt;B, E&gt;) → std::expected&lt;B, E&gt;</span>
+load_config(path)
+    .and_then([](Config cfg) -&gt; std::expected&lt;HsvRange, ConfigError&gt; {
+        <span class="hl-keyword">if</span> (cfg.hsv.lower[<span class="hl-number">0</span>] &gt; cfg.hsv.upper[<span class="hl-number">0</span>]) {
+            <span class="hl-keyword">return</span> std::unexpected(ConfigError{
+                ConfigErrorKind::InvalidValue,
+                <span class="hl-string">"HSV lower &gt; upper"</span>
+            });
+        }
+        <span class="hl-keyword">return</span> cfg.hsv;
+    })
+    .and_then([](HsvRange hsv) -&gt; std::expected&lt;Tracker, ConfigError&gt; {
+        <span class="hl-keyword">return</span> Tracker{hsv}; <span class="hl-comment">// 成功</span>
+    });
+
+<span class="hl-comment">// or_else: 失敗時に回復処理（成功はそのまま通過）</span>
+<span class="hl-comment">// std::expected&lt;A, E&gt; → (E → std::expected&lt;A, F&gt;) → std::expected&lt;A, F&gt;</span>
+load_config(path)
+    .or_else([](ConfigError err) -&gt; std::expected&lt;Config, ConfigError&gt; {
+        <span class="hl-keyword">if</span> (err.kind == ConfigErrorKind::FileNotFound) {
+            <span class="hl-keyword">return</span> make_default_config(); <span class="hl-comment">// デフォルトで回復</span>
+        }
+        <span class="hl-keyword">return</span> std::unexpected(err); <span class="hl-comment">// 回復不能はそのまま伝搬</span>
+    });
+
+<span class="hl-comment">// transform: 成功値を変換（失敗はそのまま通過）</span>
+<span class="hl-comment">// std::expected&lt;A, E&gt; → (A → B) → std::expected&lt;B, E&gt;</span>
+load_config(path)
+    .transform([](Config cfg) { <span class="hl-keyword">return</span> cfg.camera_id; }); <span class="hl-comment">// → expected&lt;int, E&gt;</span></code></pre>
+</div>
 
 <h3>モナディックチェーン（C++23）</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
@@ -1626,6 +2458,77 @@ C++20 環境では <code>tl::expected</code>（ヘッダオンリー）が互換
 
 <div class="tip-box"><strong>この章はスキップ可能</strong>
 ONNX Runtime のセットアップが重いため、時間がない場合はスキップして Chapter 9 に進んでも問題ありません。<code>MODERN_CPP_ENABLE_ONNX=OFF</code>（デフォルト）でビルドするとスタブ実装が使われます。
+</div>
+
+<h3>ONNX Runtime セッションのライフサイクル</h3>
+<div class="code-wrap"><span class="code-label">C++（ONNX Runtime セッション管理）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// ONNX Runtime の C++ API は以下の順序で初期化する</span>
+Ort::Env env{ORT_LOGGING_LEVEL_WARNING, <span class="hl-string">"pose_estimator"</span>}; <span class="hl-comment">// 1. 環境（プロセスに1つ）</span>
+
+Ort::SessionOptions opts;
+opts.SetIntraOpNumThreads(<span class="hl-number">1</span>);                      <span class="hl-comment">// スレッド数</span>
+opts.SetGraphOptimizationLevel(ORT_ENABLE_BASIC); <span class="hl-comment">// グラフ最適化レベル</span>
+
+Ort::Session session{                             <span class="hl-comment">// 2. セッション（モデルを読み込む）</span>
+    env,
+    model_path.c_str(),
+    opts
+};
+
+<span class="hl-comment">// 入力テンソルの形状を確認</span>
+<span class="hl-keyword">auto</span> input_name = session.GetInputNameAllocated(<span class="hl-number">0</span>, allocator);
+<span class="hl-keyword">auto</span> input_shape = session.GetInputTypeInfo(<span class="hl-number">0</span>).GetTensorTypeAndShapeInfo().GetShape();
+<span class="hl-comment">// MoveNet: [1, 192, 192, 3] (batch, height, width, channels)</span></code></pre>
+</div>
+
+<h3>C API ハンドルへの unique_ptr カスタムデリータ</h3>
+<p>ONNX Runtime の C API（<code>OrtApi</code>）は C スタイルのハンドルを返します。カスタムデリータを持つ <code>unique_ptr</code> でRAII管理できます。</p>
+<div class="code-wrap"><span class="code-label">C++（カスタムデリータの例）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// C API ハンドルをRAAI管理する汎用パターン</span>
+<span class="hl-keyword">const</span> OrtApi* g_ort = OrtGetApiBase()-&gt;GetApi(ORT_API_VERSION);
+
+<span class="hl-comment">// カスタムデリータ: ラムダで解放関数を指定</span>
+<span class="hl-keyword">auto</span> session_deleter = [](OrtSession* s) { g_ort-&gt;ReleaseSession(s); };
+std::unique_ptr&lt;OrtSession, <span class="hl-keyword">decltype</span>(session_deleter)&gt;
+    session{raw_session_ptr, session_deleter};
+
+<span class="hl-comment">// unique_ptr がスコープを出るとカスタムデリータが呼ばれる</span>
+<span class="hl-comment">// OrtReleaseSession(session.get()) と同等の処理が自動実行される</span>
+
+<span class="hl-comment">// ファイルディスクリプタの例（POSIX API）</span>
+<span class="hl-keyword">auto</span> fd_closer = [](<span class="hl-type">int</span>* fd) { <span class="hl-keyword">if</span>(*fd != -<span class="hl-number">1</span>) close(*fd); };
+std::unique_ptr&lt;<span class="hl-type">int</span>, <span class="hl-keyword">decltype</span>(fd_closer)&gt; safe_fd{&amp;fd, fd_closer};</code></pre>
+</div>
+
+<h3>PIMPL がコンパイル時間を削減する仕組み</h3>
+<p>PIMPL（Pointer to IMPLementation）パターンの主なメリットはコンパイル時間の削減です。</p>
+<table>
+<tr><th>状況</th><th>PIMPL なし</th><th>PIMPL あり</th></tr>
+<tr><td>ヘッダの依存</td><td>pose_estimator.hpp が onnxruntime.h を include → 全 includer が再コンパイル対象</td><td>pose_estimator.hpp は Impl の前方宣言のみ → 再コンパイル不要</td></tr>
+<tr><td>ONNX Runtime 変更時</td><td>ONNX を使う全 .cpp が再コンパイル</td><td>pose_estimator.cpp のみ再コンパイル</td></tr>
+<tr><td>バイナリ互換性</td><td>△（ヘッダ変更がインターフェース変更）</td><td>○（Impl を変えても外部 ABI は変わらない）</td></tr>
+</table>
+
+<h3>std::span&lt;const std::byte&gt; で生データを扱う</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// cv::Mat のピクセルデータを ONNX テンソルに変換する例</span>
+cv::Mat resized;
+cv::resize(frame, resized, cv::Size(<span class="hl-number">192</span>, <span class="hl-number">192</span>));
+cv::Mat float_mat;
+resized.convertTo(float_mat, CV_32FC3, <span class="hl-number">1.0</span>/<span class="hl-number">255.0</span>); <span class="hl-comment">// 0〜1 に正規化</span>
+
+<span class="hl-comment">// std::span で「所有権なし」のビューとして ONNX に渡す</span>
+std::span&lt;<span class="hl-keyword">const</span> <span class="hl-type">float</span>&gt; tensor_data{
+    reinterpret_cast&lt;<span class="hl-keyword">const</span> <span class="hl-type">float</span>*&gt;(float_mat.data),
+    <span class="hl-keyword">static_cast</span>&lt;<span class="hl-type">size_t</span>&gt;(<span class="hl-number">192</span> * <span class="hl-number">192</span> * <span class="hl-number">3</span>)
+};
+
+Ort::Value input_tensor = Ort::Value::CreateTensor&lt;<span class="hl-type">float</span>&gt;(
+    memory_info,
+    const_cast&lt;<span class="hl-type">float</span>*&gt;(tensor_data.data()), <span class="hl-comment">// C API は const を要求しない</span>
+    tensor_data.size(),
+    input_shape.data(), input_shape.size()
+);</code></pre>
 </div>
 
 <h3>PIMPL パターン</h3>
@@ -1724,6 +2627,118 @@ C++23 では <code>std::mdspan</code> が導入され、2D/3D 配列へのビュ
 <tr><td>リソース解放順序</td><td>ImGui → GLFW → OpenCV の逆依存順で確実に解放</td></tr>
 <tr><td>std::mutex + std::atomic</td><td>OSC受信スレッドと GUI スレッドのデータ競合を防ぐ</td></tr>
 </table>
+
+<h3>即席 GUI（Immediate Mode GUI）とは</h3>
+<p>Dear ImGui は「即席モード（Immediate Mode）」GUI ライブラリです。従来の「保持モード（Retained Mode）」GUI（Qt、Win32 など）との根本的な違いがあります。</p>
+<table>
+<tr><th></th><th>Retained Mode（Qt/Win32）</th><th>Immediate Mode（ImGui）</th></tr>
+<tr><td>状態の管理</td><td>ウィジェットオブジェクトが内部状態を保持</td><td>呼び出し元のデータが状態。ウィジェットは毎フレーム再生成</td></tr>
+<tr><td>コード量</td><td>多い（クラス・シグナル・スロット）</td><td>少ない（関数を並べるだけ）</td></tr>
+<tr><td>再利用性</td><td>高い（UI コンポーネント化が容易）</td><td>低い（テストが難しい）</td></tr>
+<tr><td>向いている用途</td><td>製品 UI、複雑なレイアウト</td><td>デバッグパネル、パラメータ調整</td></tr>
+</table>
+
+<h3>ImGui レンダリングループの解剖</h3>
+<div class="code-wrap"><span class="code-label">C++（ImGui の 1 フレーム）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// 毎フレーム実行する ImGui レンダリングループ</span>
+<span class="hl-keyword">while</span> (!glfwWindowShouldClose(window)) {
+    glfwPollEvents(); <span class="hl-comment">// 1. GLFW: マウス・キーボードイベントを収集</span>
+
+    <span class="hl-comment">// 2. ImGui: 新フレームの開始</span>
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame(); <span class="hl-comment">// ← この後にウィジェット関数を呼ぶ</span>
+
+    <span class="hl-comment">// 3. ウィジェットを宣言（順に並べるだけ。配置はImGuiが計算）</span>
+    render_hsv_panel(ui_state);   <span class="hl-comment">// HSV 調整パネル</span>
+    render_fps_panel(ui_state);   <span class="hl-comment">// FPS 表示</span>
+    render_log_panel(ui_state);   <span class="hl-comment">// ログパネル</span>
+
+    <span class="hl-comment">// 4. ImGui: 描画コマンドリストを生成</span>
+    ImGui::Render();
+
+    <span class="hl-comment">// 5. OpenGL: 画面をクリアして ImGui の描画コマンドを実行</span>
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(window); <span class="hl-comment">// 6. ダブルバッファをスワップ（ちらつき防止）</span>
+}</code></pre>
+</div>
+
+<h3>std::mutex vs std::atomic の選び方</h3>
+<table>
+<tr><th>状況</th><th>推奨</th><th>理由</th></tr>
+<tr><td>単純な数値（int, float, bool）の読み書き</td><td><code>std::atomic&lt;T&gt;</code></td><td>mutex より軽量。多くの場合ロックフリー</td></tr>
+<tr><td>複数フィールドをアトミックに更新</td><td><code>std::mutex</code></td><td>複数操作をまとめて保護</td></tr>
+<tr><td>std::vector, std::string などのコンテナ</td><td><code>std::mutex</code></td><td>atomic が使えない（トリビアルでない型）</td></tr>
+<tr><td>読み込みが多く書き込みが少ない</td><td><code>std::shared_mutex</code></td><td>読み込みを並列化できる（C++17）</td></tr>
+</table>
+<div class="code-wrap"><span class="code-label">C++（atomic と mutex の使い分け）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-keyword">class</span> UiState {
+    <span class="hl-keyword">mutable</span> std::mutex mutex_;     <span class="hl-comment">// mutable: const メソッドでもロックできる</span>
+    std::atomic&lt;<span class="hl-type">float</span>&gt; fps_{<span class="hl-number">0.0f</span>}; <span class="hl-comment">// 単純な float → atomic で十分</span>
+    std::vector&lt;std::string&gt; logs_; <span class="hl-comment">// コンテナ → mutex が必要</span>
+
+<span class="hl-keyword">public</span>:
+    <span class="hl-comment">// atomic は mutex 不要</span>
+    <span class="hl-type">void</span> set_fps(<span class="hl-type">float</span> fps) { fps_.store(fps, std::memory_order_relaxed); }
+    <span class="hl-type">float</span> get_fps() <span class="hl-keyword">const</span> { <span class="hl-keyword">return</span> fps_.load(std::memory_order_relaxed); }
+
+    <span class="hl-comment">// コンテナは mutex で保護</span>
+    <span class="hl-type">void</span> add_log(std::string msg) {
+        std::lock_guard guard{mutex_}; <span class="hl-comment">// RAII ロック（スコープ終了で自動解放）</span>
+        logs_.push_back(std::move(msg));
+    }
+};</code></pre>
+</div>
+
+<h3>Observer パターンとコールバックのライフタイム管理</h3>
+<div class="code-wrap"><span class="code-label">C++（weak_ptr で dangling を防ぐ）</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// NG: lambda が参照キャプチャしているオブジェクトが先に破棄される</span>
+{
+    media::ColorTracker tracker{cfg.hsv};
+    ui_state.on_hsv_change([&amp;tracker](HsvRange r) { <span class="hl-comment">// tracker を参照キャプチャ</span>
+        tracker.set_range(r); <span class="hl-comment">// ← tracker が破棄後に呼ばれたら UB</span>
+    });
+} <span class="hl-comment">// ← tracker 破棄。でも on_hsv_change のコールバックはまだ登録されている</span>
+
+<span class="hl-comment">// OK: shared_ptr + weak_ptr でライフタイムを管理</span>
+<span class="hl-keyword">auto</span> tracker = std::make_shared&lt;media::ColorTracker&gt;(cfg.hsv);
+std::weak_ptr&lt;media::ColorTracker&gt; weak = tracker;
+
+ui_state.on_hsv_change([weak](HsvRange r) {
+    <span class="hl-keyword">if</span> (<span class="hl-keyword">auto</span> t = weak.lock()) { <span class="hl-comment">// オブジェクトが生存していれば shared_ptr を取得</span>
+        t-&gt;set_range(r);
+    } <span class="hl-comment">// ← lock() が nullptr を返せばコールバックは何もしない（安全）</span>
+});</code></pre>
+</div>
+
+<h3>RAII ラッパーで ImGui コンテキストを管理</h3>
+<div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<pre><code class="lang-cpp"><span class="hl-comment">// ImGui の初期化/終了を RAII で管理</span>
+<span class="hl-keyword">class</span> ImGuiContext {
+<span class="hl-keyword">public</span>:
+    ImGuiContext(GLFWwindow* window) {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForOpenGL(window, <span class="hl-keyword">true</span>);
+        ImGui_ImplOpenGL3_Init(<span class="hl-string">"#version 330"</span>);
+    }
+    ~ImGuiContext() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+    }
+    ImGuiContext(<span class="hl-keyword">const</span> ImGuiContext&amp;) = <span class="hl-keyword">delete</span>;
+    ImGuiContext&amp; <span class="hl-keyword">operator</span>=(<span class="hl-keyword">const</span> ImGuiContext&amp;) = <span class="hl-keyword">delete</span>;
+};
+
+<span class="hl-comment">// 使い方: スコープを出ると自動で Shutdown が呼ばれる</span>
+{
+    ImGuiContext imgui_ctx{window};
+    <span class="hl-comment">// ... メインループ ...</span>
+} <span class="hl-comment">// ← ImGui の Shutdown が自動実行</span></code></pre>
+</div>
 
 <h3>解放順序（依存関係の逆順）</h3>
 <div class="code-wrap"><span class="code-label">C++</span><button class="copy-btn" onclick="copyCode(this)">コピー</button>
