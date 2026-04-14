@@ -1,0 +1,27 @@
+# LLVM スタイルをベースに、見た目を少し馴染ませる
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+PointerAlignment: Left
+NamespaceIndentation: None
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+BreakBeforeBraces: Attach
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  # プロジェクト内ヘッダ "greet/…"
+  - Regex:    '^"greet/'
+    Priority: 1
+  # その他の "..."
+  - Regex:    '^".*"'
+    Priority: 2
+  # サードパーティ <doctest/…> など <…/…> 形式
+  - Regex:    '^<.*/.*>'
+    Priority: 3
+  # 標準ライブラリ <string> など
+  - Regex:    '^<[^/]+>'
+    Priority: 4

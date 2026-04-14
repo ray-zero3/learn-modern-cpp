@@ -1,0 +1,23 @@
+# ビルド成果物（out-of-source build の成果物はすべてここに集約する）
+build/
+build-*/
+out/
+cmake-build-*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# clangd / cmake 副産物
+.cache/
+compile_commands.json
+
+# テスト/カバレッジ
+Testing/
+*.gcda
+*.gcno
+*.profraw
